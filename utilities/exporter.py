@@ -26,7 +26,7 @@ def make_img(payload, output_dir="noteimg"):
             draw.ellipse([x-2, y-2, x+2, y+2], fill=color)
         else: 
             pass
-#make timestamp - save to noteimg
+#make timestamp - to save to noteimg
     timestamp = int(time.time())
     filename = f"note_{timestamp}.png"
     filepath = os.path.join(output_dir, filename)

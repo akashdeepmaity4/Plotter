@@ -5,6 +5,7 @@ __pycache__/
 desktop.ini
 .vscode/
 .idea/
+
 logs/
 log/
 .log

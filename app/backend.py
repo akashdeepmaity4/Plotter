@@ -4,6 +4,7 @@ import re
 from flask import Flask, render_template, request, jsonify
 from utilities.exporter import make_img
 
+
 def resource_path(relative_path):
     try:
         base_path = sys._MEIPASS

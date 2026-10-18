@@ -4,6 +4,7 @@ const colorPicker = document.getElementById('colorPicker');
 const clearBtn = document.getElementById('clearBtn');
 const saveBtn = document.getElementById('saveBtn');
 
+
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight - 60;
 
