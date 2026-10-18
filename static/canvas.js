@@ -9,7 +9,7 @@ canvas.height = window.innerHeight - 60;
 
 let drawing = false;
 let currentLine = [];
-let allLines = []; 
+let allLines = [];
 
 ctx.lineWidth = 3;
 ctx.lineCap = 'round';
@@ -28,29 +28,29 @@ function getCoordinates(e) {
 function startDrawing(e) {
     drawing = true;
     const coords = getCoordinates(e);
-    
+
     ctx.beginPath();
     ctx.moveTo(coords.x, coords.y);
     ctx.strokeStyle = colorPicker.value;
-    
+
     currentLine = [{ x: coords.x, y: coords.y }];
 }
 
 function draw(e) {
     if (!drawing) return;
-    e.preventDefault(); 
-    
+    e.preventDefault();
+
     const coords = getCoordinates(e);
     ctx.lineTo(coords.x, coords.y);
     ctx.stroke();
-    
+
     currentLine.push({ x: coords.x, y: coords.y });
 }
 
 function stopDrawing() {
     if (!drawing) return;
     drawing = false;
-    
+
 
     if (currentLine.length > 0) {
         allLines.push({
@@ -85,7 +85,7 @@ saveBtn.addEventListener('click', async () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        
+
         if (response.ok) {
             alert("Saved successfully!");
         } else {
@@ -96,11 +96,15 @@ saveBtn.addEventListener('click', async () => {
     }
 });
 
-// Event Listeners for both PC and Tablet compatibility
+
 canvas.addEventListener('mousedown', startDrawing);
+
 canvas.addEventListener('mousemove', draw);
+
 window.addEventListener('mouseup', stopDrawing);
 
 canvas.addEventListener('touchstart', startDrawing, { passive: false });
+
 canvas.addEventListener('touchmove', draw, { passive: false });
+
 window.addEventListener('touchend', stopDrawing);

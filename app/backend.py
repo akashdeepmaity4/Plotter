@@ -17,8 +17,14 @@ app = Flask(__name__,
             template_folder=resource_path('templates'),
             static_folder=resource_path('static'))
 
-# ---------- Storage directory (HARDCODE YOUR DESIRED PATH) ----------
-STORAGE_DIR = r"D:/projects/diagramappfornotes/noteimg"   # <-- CHANGE IF NEEDED
+# Save beside the executable when bundled, or in the project root when running
+# from source. This keeps the output location independent of the build machine.
+if getattr(sys, 'frozen', False):
+    APP_DIR = os.path.dirname(sys.executable)
+else:
+    APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+STORAGE_DIR = os.path.join(APP_DIR, 'noteimg')
 if not os.path.exists(STORAGE_DIR):
     os.makedirs(STORAGE_DIR)
 

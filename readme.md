@@ -35,5 +35,6 @@ python backend.py
 ## OR 
 
 - Download the .exe file and directly run it on your host device. Then go to localhost server if you want to use a second device. Draw on the executable's canvas if you want to draw from your host device.
+
 ## DISCLAIMER
-BOTH DEVICES MUST BE ON THE SAME WIFI NETWORK FOR THIS SCRIPT TO WORK
+> BOTH DEVICES MUST BE ON THE SAME WIFI NETWORK FOR THIS SCRIPT TO WORK
