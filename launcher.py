@@ -21,7 +21,7 @@ if __name__ == '__main__':
     time.sleep(1)
 
     webview.create_window(
-        'Diagram App for Notes',
+        'Plotter',
         'http://127.0.0.1:5000',
         width=1024,
         height=768,
