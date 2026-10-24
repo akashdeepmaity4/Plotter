@@ -47,4 +47,4 @@ def save_canvas():
         print(f"[ERROR] Failed to process payload: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
 
-# -DISCLAIMER--------- DO NOT run with debug=True here ----------
+# -DISCLAIMER:   DO NOT run with debug=True here
