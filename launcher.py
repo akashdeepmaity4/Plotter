@@ -7,8 +7,9 @@ import webview
 base_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, base_dir)
 
-from app.backend import app
+# implementing webview using the native webview (Pywebview library)
 
+from app.backend import app
 
 def run_flask():
     app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
