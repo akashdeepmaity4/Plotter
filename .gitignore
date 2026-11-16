@@ -12,4 +12,11 @@ logs/
 log/
 .log
 .DS_Store
+*.spec
+build
+dist
+*.sh
+*.exe
+tmp.md
+temp.md
 noteimg/
