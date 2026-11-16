@@ -1,7 +1,13 @@
 const canvasElement = document.getElementById('paintCanvas');
 const saveButton = document.getElementById('saveBtn');
+const clearButton = document.getElementById('clearBtn');
+const colorPicker = document.getElementById('colorPicker');
+const thicknessDown = document.getElementById('thicknessDown');
+const thicknessUp = document.getElementById('thicknessUp');
+const thicknessValue = document.getElementById('thicknessValue');
 const toolButtons = [...document.querySelectorAll('[data-tool]')];
-const ink = '#171717';
+let ink = colorPicker.value;
+let strokeWidth = 2;
 
 const canvas = new fabric.Canvas(canvasElement, {
     backgroundColor: '#ffffff',
@@ -47,7 +53,7 @@ function createShape(kind, start) {
         top: start.y,
         fill: 'rgba(0,0,0,0)',
         stroke: ink,
-        strokeWidth: 2,
+        strokeWidth,
         objectCaching: false,
         selectable: false,
         evented: false,
@@ -79,7 +85,7 @@ function createFreehandPath(points) {
     return new fabric.Path(commands, {
         fill: null,
         stroke: ink,
-        strokeWidth: 2,
+        strokeWidth,
         strokeLineCap: 'round',
         strokeLineJoin: 'round',
         objectCaching: false,
@@ -172,6 +178,46 @@ canvas.on('mouse:up', () => {
 });
 
 toolButtons.forEach((button) => button.addEventListener('click', () => setTool(button.dataset.tool)));
+
+function selectedObjects() {
+    const activeObject = canvas.getActiveObject();
+    if (!activeObject) return [];
+    return activeObject instanceof fabric.ActiveSelection ? activeObject.getObjects() : [activeObject];
+}
+
+colorPicker.addEventListener('input', () => {
+    ink = colorPicker.value;
+    selectedObjects().forEach((object) => {
+        if (object instanceof fabric.FabricText) {
+            object.set('fill', ink);
+        } else {
+            object.set('stroke', ink);
+        }
+    });
+    canvas.requestRenderAll();
+});
+
+function changeThickness(delta) {
+    strokeWidth = Math.max(1, strokeWidth + delta);
+    thicknessValue.value = `${strokeWidth} px`;
+    thicknessValue.textContent = `${strokeWidth} px`;
+    selectedObjects().forEach((object) => {
+        if (!(object instanceof fabric.FabricText) && typeof object.strokeWidth === 'number') {
+            object.set('strokeWidth', strokeWidth);
+            object.setCoords();
+        }
+    });
+    canvas.requestRenderAll();
+}
+
+thicknessDown.addEventListener('click', () => changeThickness(-1));
+thicknessUp.addEventListener('click', () => changeThickness(1));
+
+clearButton.addEventListener('click', () => {
+    canvas.discardActiveObject();
+    canvas.getObjects().slice().forEach((object) => canvas.remove(object));
+    canvas.requestRenderAll();
+});
 
 function resizeCanvas() {
     canvas.setDimensions({

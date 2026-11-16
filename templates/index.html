@@ -18,6 +18,14 @@
         <button class="tool-button" data-tool="line" aria-pressed="false">Line</button>
         <button class="tool-button" data-tool="connector" aria-pressed="false">Connector</button>
         <button class="tool-button" data-tool="text" aria-pressed="false">Text</button>
+        <label class="color-control" for="colorPicker">Color</label>
+        <input type="color" id="colorPicker" value="#171717" aria-label="Drawing color">
+        <div class="thickness-control" aria-label="Line thickness">
+            <button type="button" id="thicknessDown" aria-label="Decrease thickness">−</button>
+            <output id="thicknessValue" aria-live="polite">2 px</output>
+            <button type="button" id="thicknessUp" aria-label="Increase thickness">+</button>
+        </div>
+        <button type="button" id="clearBtn">Clear</button>
         <button id="saveBtn">Save to Host</button>
     </div>
 
