@@ -6,15 +6,17 @@
 ## Walkthrough
 
 1. Draw a diagram or a shape on the canvas shown on tablet
-1. Click the 'save to laptop' button 
-1. The program will automatically save the diagram to you laptop
-1. The diagram will be saved in 'noteimg' folder in the same directory as the main program
+1. Use Select to move and resize objects, or choose Draw, Rectangle, Ellipse, Line, Connector, or Text.
+1. Click **Save to Host** to save the rendered diagram and editable canvas data.
+1. Files are saved in the `noteimg` folder beside the program.
 
 ## Dependencies
 
 1. Python 3.x
 1. Flask 
 1. Pillow
+
+Fabric.js is included as a standalone local browser file in `static/`.
 
 ## How to run
 1. Install dependencies

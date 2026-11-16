@@ -11,15 +11,19 @@
 <body>
 
     <div id="controls">
-        <label for="colorPicker">Brush Color:</label>
-        <input type="color" id="colorPicker" value="#000000">
-
-        <button id="clearBtn">Clear</button>
-        <button id="saveBtn">Save to Noteimg</button>
+        <button class="tool-button active" data-tool="select" aria-pressed="true">Select</button>
+        <button class="tool-button" data-tool="freehand" aria-pressed="false">Draw</button>
+        <button class="tool-button" data-tool="rectangle" aria-pressed="false">Rectangle</button>
+        <button class="tool-button" data-tool="ellipse" aria-pressed="false">Ellipse</button>
+        <button class="tool-button" data-tool="line" aria-pressed="false">Line</button>
+        <button class="tool-button" data-tool="connector" aria-pressed="false">Connector</button>
+        <button class="tool-button" data-tool="text" aria-pressed="false">Text</button>
+        <button id="saveBtn">Save to Host</button>
     </div>
 
     <canvas id="paintCanvas"></canvas>
 
+    <script src="{{ url_for('static', filename='fabric.min.js') }}"></script>
     <script src="{{ url_for('static', filename='canvas.js') }}"></script>
 </body>
 

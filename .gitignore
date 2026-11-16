@@ -14,6 +14,7 @@ log/
 .DS_Store
 *.spec
 build
+launcher.spec
 dist
 *.sh
 *.exe
