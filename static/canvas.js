@@ -6,13 +6,35 @@ const thicknessDown = document.getElementById('thicknessDown');
 const thicknessUp = document.getElementById('thicknessUp');
 const thicknessValue = document.getElementById('thicknessValue');
 const toolButtons = [...document.querySelectorAll('[data-tool]')];
+const menuToggle = document.getElementById('menuToggle');
+const drawerScrim = document.getElementById('drawerScrim');
+const optionsPanel = document.getElementById('optionsPanel');
 let ink = colorPicker.value;
 let strokeWidth = 2;
+
+function setDrawerOpen(open) {
+    document.body.classList.toggle('drawer-open', open);
+    menuToggle.setAttribute('aria-expanded', String(open));
+    menuToggle.setAttribute('aria-label', open ? 'Close drawing options' : 'Open drawing options');
+}
+
+menuToggle.addEventListener('click', () => {
+    setDrawerOpen(menuToggle.getAttribute('aria-expanded') !== 'true');
+});
+drawerScrim.addEventListener('click', () => setDrawerOpen(false));
+optionsPanel.addEventListener('click', (event) => {
+    if (event.target.closest('[data-tool]')) setDrawerOpen(false);
+});
+window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') setDrawerOpen(false);
+});
 
 const canvas = new fabric.Canvas(canvasElement, {
     backgroundColor: '#ffffff',
     preserveObjectStacking: true,
     selection: true,
+    selectionColor: 'rgba(227, 160, 4, 0.28)',
+    selectionBorderColor: '#e3a004',
     stopContextMenu: true
 });
 
