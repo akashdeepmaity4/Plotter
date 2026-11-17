@@ -7,8 +7,6 @@ import webview
 base_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, base_dir)
 
-# implementing webview using the native webview (Pywebview library)
-
 from app.backend import app
 
 def run_flask():
@@ -23,8 +21,8 @@ if __name__ == '__main__':
     webview.create_window(
         'Plotter',
         'http://127.0.0.1:5000',
-        width=1024,
-        height=768,
+        width=1920,
+        height=1080,
         resizable=True
     )
     webview.start()

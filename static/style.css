@@ -1,17 +1,17 @@
 :root {
     color-scheme: light;
     --bg-dark: #ffffff;
-    --bg-sidebar: #f3f3f3;
-    --bg-hover: #e8e8e8;
-    --bg-active: #d6d6d6;
+    --bg-sidebar: #1c1c1c;
+    --bg-hover: #303030;
+    --bg-active: #3a3020;
     --Boron-accent: #c58a00;
     --Boron-accent-light: #f9d88c;
     --Boron-accent-hover: #a97400;
-    --text-main: #222222;
-    --text-muted: #666666;
-    --border-color: #d7d7d7;
+    --text-main: #f5f5f4;
+    --text-muted: #a3a3a3;
+    --border-color: #343434;
     --canvas-background: #ffffff;
-    --toolbar-height: 60px;
+    --toolbar-height: 64px;
 }
 
 
@@ -52,8 +52,9 @@ body {
     overflow-x: auto;
     white-space: nowrap;
     border-bottom: 1px solid var(--border-color);
-    background: #121212;
+    background: #171717;
     color: #ffffff;
+    box-shadow: 0 2px 12px rgb(0 0 0 / 12%);
 }
 
 #menuToggle,
@@ -65,23 +66,23 @@ body {
     display: contents;
 }
 
-#controls > button {
+#controls>button {
     color: #ffffff;
 }
 
 button {
     flex: 0 0 auto;
-    min-height: 34px;
-    padding: 0 13px;
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
+    min-height: 38px;
+    padding: 0 14px;
+    border: 1px solid #3c3c3c;
+    border-radius: 8px;
     background: transparent;
     color: var(--text-main);
     font: inherit;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 button:hover {
@@ -91,12 +92,14 @@ button:hover {
 
 #controls button:hover {
     border-color: #555555;
-    background: #333333;
+    background: #303030;
+    transform: translateY(-1px);
 }
 
 .tool-button.active {
-    border-color: #e3a004;
-    background: rgb(227 160 4 / 32%);
+    border-color: var(--Boron-accent);
+    background: rgb(197 138 0 / 18%);
+    box-shadow: inset 0 0 0 1px rgb(197 138 0 / 16%);
 }
 
 .color-control {
@@ -112,7 +115,7 @@ button:hover {
     padding: 3px;
     overflow: hidden;
     border: 1px solid var(--border-color);
-    border-radius: 5px;
+    border-radius: 8px;
     background: #ffffff;
     cursor: pointer;
 }
@@ -139,12 +142,13 @@ button:hover {
 
 #clearBtn {
     margin-left: auto;
-    color: #a33b32;
+    color: #f0a39b;
 }
 
 #clearBtn:hover {
     border-color: #e1b8b4;
-    background: #f9eeed;
+    background: #382321;
+    color: #ffd4cf;
 }
 
 button:focus-visible,
@@ -176,7 +180,9 @@ button:focus-visible,
 }
 
 @media (max-width: 1024px) {
-    :root { --toolbar-height: 56px; }
+    :root {
+        --toolbar-height: 56px;
+    }
 
     #controls {
         z-index: 3;
@@ -219,9 +225,9 @@ button:focus-visible,
         gap: 10px;
         padding: 16px;
         overflow-y: auto;
-        background: #242424;
+        background: var(--bg-sidebar);
         color: #ffffff;
-        box-shadow: 8px 0 24px rgb(0 0 0 / 12%);
+        box-shadow: 12px 0 36px rgb(0 0 0 / 22%);
         transform: translateX(-105%);
         transition: transform 0.2s ease;
         white-space: normal;
@@ -239,20 +245,29 @@ button:focus-visible,
     }
 
     #optionsPanel .tool-button.active {
-        border-color: #e3a004;
-        background: rgb(227 160 4 / 32%);
+        border-color: var(--Boron-accent);
+        background: rgb(197 138 0 / 18%);
     }
 
-    #optionsPanel > button,
-    #optionsPanel > .color-control,
-    #optionsPanel > #colorPicker,
-    #optionsPanel > .thickness-control {
+    #optionsPanel>button,
+    #optionsPanel>.color-control,
+    #optionsPanel>#colorPicker,
+    #optionsPanel>.thickness-control {
         width: 100%;
     }
 
-    #optionsPanel > .color-control { margin-top: 8px; }
-    #optionsPanel > #colorPicker { height: 42px; flex-basis: 42px; }
-    #optionsPanel > .thickness-control { justify-content: space-between; }
+    #optionsPanel>.color-control {
+        margin-top: 8px;
+    }
+
+    #optionsPanel>#colorPicker {
+        height: 42px;
+        flex-basis: 42px;
+    }
+
+    #optionsPanel>.thickness-control {
+        justify-content: space-between;
+    }
 
     #drawerScrim {
         position: fixed;
@@ -265,8 +280,14 @@ button:focus-visible,
         transition: opacity 0.2s ease;
     }
 
-    body.drawer-open #optionsPanel { transform: translateX(0); }
-    body.drawer-open #drawerScrim { opacity: 1; pointer-events: auto; }
+    body.drawer-open #optionsPanel {
+        transform: translateX(0);
+    }
+
+    body.drawer-open #drawerScrim {
+        opacity: 1;
+        pointer-events: auto;
+    }
 
     #clearBtn {
         margin-left: auto;
@@ -279,16 +300,39 @@ button:focus-visible,
 }
 
 @media (max-width: 480px) {
-    #controls { gap: 5px; padding: 0 6px; }
-    #clearBtn, #saveBtn { padding: 0 7px; font-size: 11px; }
+    #controls {
+        gap: 5px;
+        padding: 0 6px;
+    }
+
+    #clearBtn,
+    #saveBtn {
+        padding: 0 7px;
+        font-size: 11px;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    #optionsPanel, #drawerScrim { transition: none; }
+
+    #optionsPanel,
+    #drawerScrim {
+        transition: none;
+    }
 }
 
 @media (max-width: 360px) {
-    #controls { gap: 4px; }
-    #menuToggle { flex-basis: 36px; width: 36px; }
-    #clearBtn, #saveBtn { padding: 0 5px; font-size: 10px; }
+    #controls {
+        gap: 4px;
+    }
+
+    #menuToggle {
+        flex-basis: 36px;
+        width: 36px;
+    }
+
+    #clearBtn,
+    #saveBtn {
+        padding: 0 5px;
+        font-size: 10px;
+    }
 }

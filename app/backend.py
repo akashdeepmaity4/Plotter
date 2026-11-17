@@ -4,7 +4,6 @@ import re
 from flask import Flask, render_template, request, jsonify
 from utilities.exporter import save_png_data
 
-
 def resource_path(relative_path):
     try:
         base_path = sys._MEIPASS
@@ -14,12 +13,11 @@ def resource_path(relative_path):
             base_path = os.path.dirname(base_path)
     return os.path.join(base_path, relative_path)
 
+
 app = Flask(__name__,
             template_folder=resource_path('templates'),
             static_folder=resource_path('static'))
 
-# Save beside the executable when bundled, or in the project root when running
-# from source. This keeps the output location independent of the build machine.
 if getattr(sys, 'frozen', False):
     APP_DIR = os.path.dirname(sys.executable)
 else:
