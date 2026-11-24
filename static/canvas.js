@@ -1,7 +1,6 @@
 const canvasElement = document.getElementById('paintCanvas');
 const saveButton = document.getElementById('saveBtn');
 const clearButton = document.getElementById('clearBtn');
-const colorPicker = document.getElementById('colorPicker');
 const thicknessDown = document.getElementById('thicknessDown');
 const thicknessUp = document.getElementById('thicknessUp');
 const thicknessValue = document.getElementById('thicknessValue');
@@ -9,7 +8,31 @@ const toolButtons = [...document.querySelectorAll('[data-tool]')];
 const menuToggle = document.getElementById('menuToggle');
 const drawerScrim = document.getElementById('drawerScrim');
 const optionsPanel = document.getElementById('optionsPanel');
-let ink = colorPicker.value;
+const colorTrigger = document.getElementById('colorTrigger');
+const colorSwatchPreview = document.getElementById('colorSwatchPreview');
+const colorPopover = document.getElementById('colorPopover');
+const iroMount = document.getElementById('iroMount');
+const swatchRow = document.getElementById('swatchRow');
+const hexInput = document.getElementById('hexInput');
+
+const PRESET_COLORS = ['#171717', '#ffffff', '#e03e3e', '#e3a004', '#2f9e44', '#1971c2'];
+const MAX_RECENT = 5;
+let recentColors = [];
+let ink = hexToRgba(colorTrigger ? hexInput.value : '#171717');
+
+function hexToRgba(hex) {
+    const match = /^#?([0-9a-f]{3,8})$/i.exec(hex.trim());
+    if (!match) return null;
+    let digits = match[1];
+    if (digits.length === 3) digits = digits.split('').map((c) => c + c).join('');
+    if (digits.length !== 6 && digits.length !== 8) return null;
+    const value = parseInt(digits, 16);
+    if (digits.length === 6) {
+        const rgb = parseInt(digits, 16);
+        return `rgba(${(rgb >>> 16) & 0xff}, ${(rgb >>> 8) & 0xff}, ${rgb & 0xff}, 1)`;
+    }
+    return `rgba(${(value >>> 24) & 0xff}, ${(value >>> 16) & 0xff}, ${(value >>> 8) & 0xff}, ${(value & 0xff) / 255})`;
+}
 let strokeWidth = 2;
 
 function setDrawerOpen(open) {
@@ -29,6 +52,132 @@ window.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') setDrawerOpen(false);
 });
 
+function applyInk(rgbaString, { commit = false } = {}) {
+    ink = rgbaString;
+    colorSwatchPreview.style.setProperty('background-color', rgbaString);
+    document.documentElement.style.setProperty('--ink-color', rgbaString);
+    if (commit) rememberColor(rgbaString);
+    selectedObjects().forEach((object) => {
+        if (object instanceof fabric.FabricText) {
+            object.set('fill', rgbaString);
+        } else {
+            object.set('stroke', rgbaString);
+        }
+    });
+    canvas.requestRenderAll();
+    markActiveSwatch(rgbaString);
+}
+
+function rgbaMatches(candidate, rgbaString) {
+    return candidate.replace(/\s/g, '') === rgbaString.replace(/\s/g, '');
+}
+
+function markActiveSwatch(rgbaString) {
+    swatchRow.querySelectorAll('.swatch').forEach((swatch) => {
+        swatch.classList.toggle('active', rgbaMatches(swatch.dataset.rgba || '', rgbaString));
+    });
+}
+
+function rememberColor(rgbaString) {
+    if (/rgba\(\d+, \d+, \d+, 0(?:\.0+)?\)$/i.test(rgbaString)) return; // ignore fully transparent
+    recentColors = recentColors.filter((color) => !rgbaMatches(color, rgbaString));
+    recentColors.unshift(rgbaString);
+    recentColors = recentColors.slice(0, MAX_RECENT);
+    renderSwatches();
+}
+
+function makeSwatch(rgbaString, title) {
+    const swatch = document.createElement('button');
+    swatch.type = 'button';
+    swatch.className = 'swatch';
+    swatch.title = title;
+    swatch.dataset.rgba = rgbaString;
+    swatch.setAttribute('aria-label', title);
+    // inner layer paints the ink over the CSS checkerboard so transparency is visible
+    const fill = document.createElement('span');
+    fill.style.display = 'block';
+    fill.style.width = '100%';
+    fill.style.height = '100%';
+    fill.style.borderRadius = 'inherit';
+    fill.style.backgroundColor = rgbaString;
+    swatch.appendChild(fill);
+    return swatch;
+}
+
+function addSwatch(rgbaString, title) {
+    const swatch = makeSwatch(rgbaString, title);
+    swatch.addEventListener('click', () => {
+        iroPicker.color.set(rgbaString);
+        const resolved = iroPicker.color.rgbaString;
+        hexInput.value = iroPicker.color.hex8String;
+        applyInk(resolved, { commit: true });
+    });
+    swatchRow.appendChild(swatch);
+}
+
+function renderSwatches() {
+    swatchRow.textContent = '';
+    [...PRESET_COLORS, ...recentColors].forEach((hex) => addSwatch(hex, `Use ${hex}`));
+    markActiveSwatch(ink);
+}
+
+const iroPicker = new iro.ColorPicker(iroMount, {
+    width: 210,
+    color: '#171717',
+    borderWidth: 0,
+    padding: 0,
+    layout: [
+        { component: iro.ui.Wheel, options: { wheelLightness: 1, wheelAngle: 270, wheelDirection: 'anticlockwise' } },
+        { component: iro.ui.Slider, options: { sliderType: 'value' } },
+        { component: iro.ui.Slider, options: { sliderType: 'alpha' } }
+    ]
+});
+window.iroPicker = iroPicker; // expose for console debugging
+
+iroPicker.on('color:change', (color) => {
+    hexInput.value = color.hex8String;
+    applyInk(color.rgbaString);
+});
+
+hexInput.addEventListener('change', () => {
+    const rgba = hexToRgba(hexInput.value);
+    if (rgba) {
+        iroPicker.color.set(hexInput.value);
+        applyInk(rgba, { commit: true });
+    } else {
+        hexInput.value = iroPicker.color.hex8String;
+    }
+});
+
+function setColorPopoverOpen(open) {
+    colorPopover.hidden = !open;
+    colorTrigger.setAttribute('aria-expanded', String(open));
+    if (open) markActiveSwatch(ink);
+}
+
+colorTrigger.addEventListener('click', (event) => {
+    event.stopPropagation();
+    setColorPopoverOpen(colorPopover.hidden);
+});
+
+colorPopover.addEventListener('click', (event) => event.stopPropagation());
+colorPopover.addEventListener('pointerdown', (event) => event.stopPropagation());
+colorPopover.addEventListener('mousedown', (event) => event.stopPropagation());
+colorPopover.addEventListener('touchstart', (event) => event.stopPropagation(), { passive: true });
+
+document.addEventListener('pointerdown', (event) => {
+    if (!colorPopover.hidden && !colorPopover.contains(event.target) && event.target !== colorTrigger) {
+        setColorPopoverOpen(false);
+    }
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !colorPopover.hidden) {
+        setColorPopoverOpen(false);
+        colorTrigger.focus();
+    }
+});
+
 const canvas = new fabric.Canvas(canvasElement, {
     backgroundColor: '#ffffff',
     preserveObjectStacking: true,
@@ -37,6 +186,9 @@ const canvas = new fabric.Canvas(canvasElement, {
     selectionBorderColor: '#e3a004',
     stopContextMenu: true
 });
+
+renderSwatches();
+applyInk(ink);
 
 let activeTool = 'select';
 let activeShape = null;
@@ -207,18 +359,6 @@ function selectedObjects() {
     return activeObject instanceof fabric.ActiveSelection ? activeObject.getObjects() : [activeObject];
 }
 
-colorPicker.addEventListener('input', () => {
-    ink = colorPicker.value;
-    selectedObjects().forEach((object) => {
-        if (object instanceof fabric.FabricText) {
-            object.set('fill', ink);
-        } else {
-            object.set('stroke', ink);
-        }
-    });
-    canvas.requestRenderAll();
-});
-
 function changeThickness(delta) {
     strokeWidth = Math.max(1, strokeWidth + delta);
     thicknessValue.value = `${strokeWidth} px`;
@@ -252,13 +392,47 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-saveButton.addEventListener('click', async () => {
+const exportModal = document.getElementById('exportModal');
+const exportCancel = document.getElementById('exportCancel');
+const exportConfirm = document.getElementById('exportConfirm');
+
+function selectedFormats() {
+    return [...exportModal.querySelectorAll('input[name="exportFormat"]:checked')]
+        .map((input) => input.value);
+}
+
+function openExportModal() {
+    exportModal.hidden = false;
+    exportConfirm.focus();
+}
+
+function closeExportModal() {
+    exportModal.hidden = true;
+}
+
+exportCancel.addEventListener('click', closeExportModal);
+exportModal.addEventListener('click', (event) => {
+    if (event.target === exportModal) closeExportModal();
+});
+window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !exportModal.hidden) closeExportModal();
+});
+
+exportConfirm.addEventListener('click', async () => {
+    const formats = selectedFormats();
+    if (formats.length === 0) {
+        alert('Select at least one export format.');
+        return;
+    }
+    closeExportModal();
     saveButton.disabled = true;
+    exportConfirm.disabled = true;
     try {
-        const payload = {
-            image: canvas.toDataURL({ format: 'png', multiplier: 1 }),
-            scene: canvas.toObject()
-        };
+        const payload = { formats };
+        if (formats.includes('json')) payload.scene = canvas.toObject();
+        if (formats.includes('png')) payload.png = canvas.toDataURL({ format: 'png', multiplier: 1 });
+        if (formats.includes('webp')) payload.webp = canvas.toDataURL({ format: 'webp', multiplier: 1 });
+        if (formats.includes('svg')) payload.svg = canvas.toSVG();
         const response = await fetch('/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -271,5 +445,8 @@ saveButton.addEventListener('click', async () => {
         alert('Failed to save to Host.');
     } finally {
         saveButton.disabled = false;
+        exportConfirm.disabled = false;
     }
 });
+
+saveButton.addEventListener('click', openExportModal);

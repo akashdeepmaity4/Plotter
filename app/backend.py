@@ -2,7 +2,7 @@ import sys
 import os
 import re
 from flask import Flask, render_template, request, jsonify
-from utilities.exporter import save_png_data
+from utilities.exporter import save_export
 
 def resource_path(relative_path):
     try:
@@ -38,8 +38,10 @@ def save_canvas():
         if not payload:
             return jsonify({"error": "No data received"}), 400
 
-        saved_path = save_png_data(payload.get("image"), payload.get("scene"), output_dir=STORAGE_DIR)
-        return jsonify({"status": "success", "path": saved_path}), 200
+        saved_paths = save_export(payload, output_dir=STORAGE_DIR)
+        if not saved_paths:
+            return jsonify({"error": "Nothing to save"}), 400
+        return jsonify({"status": "success", "paths": saved_paths}), 200
 
     except Exception as e:
         print(f"[ERROR] Failed to process payload: {str(e)}")

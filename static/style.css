@@ -108,16 +108,132 @@ button:hover {
     font-size: 12px;
 }
 
-#colorPicker {
-    flex: 0 0 36px;
-    width: 36px;
-    height: 34px;
-    padding: 3px;
-    overflow: hidden;
+.color-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+    height: 38px;
+    padding: 0 10px;
+}
+
+#colorSwatchPreview {
+    position: relative;
+    display: block;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background: #ffffff;
+    overflow: hidden;
+}
+
+#colorSwatchPreview::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    /* 3x container width so the full hue cycle is wider than the viewport */
+    width: 300%;
+    background-image: linear-gradient(90deg, #ff0000, #ff8800, #ffee00, #33cc33, #00aaff, #4444ff, #aa00ff, #ff0000);
+    background-size: 100% 100%;
+    animation: rainbow-pan 6s linear infinite;
+    will-change: transform;
+}
+
+@keyframes rainbow-pan {
+    /* shift exactly one full gradient cycle: -33.333% of the 300% layer = one swatch width,
+       seamless because the gradient starts and ends on the same red */
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-33.333%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #colorSwatchPreview::before {
+        animation: none;
+        width: 100%;
+    }
+}
+
+#colorPopover {
+    position: fixed;
+    z-index: 6;
+    top: calc(var(--toolbar-height) + 8px);
+    left: auto;
+    width: 244px;
+    padding: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: #1c1c1c;
+    color: var(--text-main);
+    box-shadow: 0 14px 40px rgb(0 0 0 / 40%);
+}
+
+#colorPopover[hidden] {
+    display: none;
+}
+
+#iroMount {
+    display: flex;
+    justify-content: center;
+}
+
+.swatch-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 12px;
+}
+
+.swatch {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    min-height: 30px;
+    border-radius: 7px;
+    border: 1px solid #3c3c3c;
+    background-image:
+    linear-gradient(45deg, #d9d9d9 25%, transparent 25%, transparent 75%, #d9d9d9 75%),
+    linear-gradient(45deg, #d9d9d9 25%, transparent 25%, transparent 75%, #d9d9d9 75%);
+    background-size: 12px 12px;
+    background-position: 0 0, 6px 6px;
     cursor: pointer;
+}
+
+.swatch.active {
+    border-color: var(--Boron-accent);
+    box-shadow: 0 0 0 2px rgb(197 138 0 / 45%);
+}
+
+.hex-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.hex-input-row label {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+#hexInput {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 7px 9px;
+    border: 1px solid #3c3c3c;
+    border-radius: 8px;
+    background: #141414;
+    color: var(--text-main);
+    font: inherit;
+    font-size: 13px;
+}
+
+#hexInput:focus {
+    outline: 2px solid var(--Boron-accent);
+    outline-offset: 1px;
 }
 
 .thickness-control {
@@ -152,7 +268,8 @@ button:hover {
 }
 
 button:focus-visible,
-#colorPicker:focus-visible {
+#hexInput:focus-visible,
+#colorTrigger:focus-visible {
     outline: 2px solid var(--Boron-accent);
     outline-offset: 2px;
 }
@@ -164,6 +281,96 @@ button:focus-visible,
 }
 
 #saveBtn:hover {
+    border-color: var(--Boron-accent-hover);
+    background: var(--Boron-accent-hover);
+}
+
+.modal-overlay {
+    position: fixed;
+    z-index: 10;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgb(0 0 0 / 55%);
+    backdrop-filter: blur(3px);
+}
+
+.modal-overlay[hidden] {
+    display: none;
+}
+
+.modal {
+    width: min(380px, 92vw);
+    padding: 22px 24px 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: #1c1c1c;
+    color: var(--text-main);
+    box-shadow: 0 18px 50px rgb(0 0 0 / 45%);
+}
+
+.modal h2 {
+    margin: 0 0 6px;
+    font-size: 18px;
+}
+
+.modal-hint {
+    margin: 0 0 16px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.format-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.format-option {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 10px 12px;
+    border: 1px solid #3c3c3c;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.format-option:hover {
+    border-color: #555555;
+    background: var(--bg-hover);
+}
+
+.format-option input {
+    accent-color: var(--Boron-accent);
+    width: 16px;
+    height: 16px;
+}
+
+.format-option:has(input:checked) {
+    border-color: var(--Boron-accent);
+    background: rgb(197 138 0 / 14%);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 18px;
+}
+
+.modal-actions .primary {
+    border-color: var(--Boron-accent);
+    background: var(--Boron-accent);
+    color: #ffffff;
+}
+
+.modal-actions .primary:hover {
     border-color: var(--Boron-accent-hover);
     background: var(--Boron-accent-hover);
 }
@@ -239,6 +446,15 @@ button:focus-visible,
         color: #ffffff;
     }
 
+    /* Popover opens as a full overlay panel when the toolbar collapses into a drawer */
+    #colorPopover {
+        position: fixed;
+        z-index: 4;
+        top: var(--toolbar-height);
+        left: 0;
+        width: min(320px, 88vw);
+    }
+
     #optionsPanel button:hover {
         border-color: #555555;
         background: #333333;
@@ -251,18 +467,25 @@ button:focus-visible,
 
     #optionsPanel>button,
     #optionsPanel>.color-control,
-    #optionsPanel>#colorPicker,
     #optionsPanel>.thickness-control {
         width: 100%;
     }
 
-    #optionsPanel>.color-control {
-        margin-top: 8px;
+    /* the color trigger spans the drawer width and its rainbow fills the whole button */
+    #optionsPanel>#colorTrigger {
+        width: 100%;
+        height: 42px;
+        padding: 0;
     }
 
-    #optionsPanel>#colorPicker {
-        height: 42px;
-        flex-basis: 42px;
+    #optionsPanel>#colorTrigger>#colorSwatchPreview {
+        width: 100%;
+        height: 100%;
+        border-radius: 7px;
+    }
+
+    #optionsPanel>.color-control {
+        margin-top: 8px;
     }
 
     #optionsPanel>.thickness-control {
