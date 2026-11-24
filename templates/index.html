@@ -4,22 +4,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@akashdeepmaity4</title>
+    <title>PLOTTER</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
 
     <div id="controls">
-        <label for="colorPicker">Brush Color:</label>
-        <input type="color" id="colorPicker" value="#000000">
+        <button type="button" id="menuToggle" aria-label="Open drawing options" aria-expanded="false"
+            aria-controls="optionsPanel">
+            <span></span><span></span><span></span>
+        </button>
+        <div id="optionsPanel">
+            <button class="tool-button active" data-tool="select" aria-pressed="true">Select</button>
+            <button class="tool-button" data-tool="freehand" aria-pressed="false">Draw</button>
+            <button class="tool-button" data-tool="rectangle" aria-pressed="false">Rectangle</button>
+            <button class="tool-button" data-tool="ellipse" aria-pressed="false">Ellipse</button>
+            <button class="tool-button" data-tool="line" aria-pressed="false">Line</button>
+            <button class="tool-button" data-tool="connector" aria-pressed="false">Connector</button>
+            <button class="tool-button" data-tool="text" aria-pressed="false">Text</button>
+            <button type="button" id="colorTrigger" aria-haspopup="dialog" aria-expanded="false"
+                aria-controls="colorPopover" aria-label="Brush color and opacity">
+                <span id="colorSwatchPreview" aria-hidden="true"></span>
+            </button>
+            <div id="colorPopover" role="dialog" aria-label="Color picker" hidden>
+                <div id="iroMount"></div>
+                <div class="swatch-row" id="swatchRow" role="group" aria-label="Preset and recent colors"></div>
+                <div class="hex-input-row">
+                    <label for="hexInput">Hex</label>
+                    <input type="text" id="hexInput" spellcheck="false" autocomplete="off" maxlength="9"
+                        value="#171717ff">
+                </div>
+            </div>
+            <div class="thickness-control" aria-label="Line thickness">
+                <button type="button" id="thicknessDown" aria-label="Decrease thickness">−</button>
+                <output id="thicknessValue" aria-live="polite">2 px</output>
+                <button type="button" id="thicknessUp" aria-label="Increase thickness">+</button>
+            </div>
+        </div>
+        <button type="button" id="clearBtn">Clear</button>
+        <button id="saveBtn">Save to Host</button>
+    </div>
 
-        <button id="clearBtn">Clear</button>
-        <button id="saveBtn">Save</button>
+    <div id="drawerScrim" aria-hidden="true"></div>
+
+    <div id="exportModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="exportModalTitle"
+        hidden>
+        <div class="modal">
+            <h2 id="exportModalTitle">Export format</h2>
+            <p class="modal-hint">Choose one or more formats to export.</p>
+            <div class="format-options">
+                <label class="format-option"><input type="checkbox" name="exportFormat" value="json"
+                        checked><span>JSON</span></label>
+                <label class="format-option"><input type="checkbox" name="exportFormat"
+                        value="svg"><span>SVG</span></label>
+                <label class="format-option"><input type="checkbox" name="exportFormat" value="png"
+                        checked><span>PNG</span></label>
+                <label class="format-option"><input type="checkbox" name="exportFormat"
+                        value="webp"><span>WEBP</span></label>
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="exportCancel">Cancel</button>
+                <button type="button" id="exportConfirm" class="primary">Export</button>
+            </div>
+        </div>
     </div>
 
     <canvas id="paintCanvas"></canvas>
 
+    <script src="{{ url_for('static', filename='fabric.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/iro.min.js') }}"></script>
     <script src="{{ url_for('static', filename='canvas.js') }}"></script>
 </body>
 

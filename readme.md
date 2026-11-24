@@ -1,20 +1,22 @@
-# PLOTTER
-![License](https://img.shields.io/badge/license-MIT-blue) ![Version](https://img.shields.io/badge/version-1.0.1-brightgreen)
+# DIAGRAM PLOTTER FOR NOTES
 
-### This program can help you draw diagrams on you laptop/PC even without a native touchscreen support, whether during meetings, classes, or just for fun! I made this because i cannot find a good penpad under my budget and i need to make diagrams in my school notes, which i take primarily on my touch-less laptop. 
+### This program can help you draw diagrams on you laptop during meetings, classes, or just for fun! I made this because i cannot find a good penpad for my budget and i need to make diagrams in my school notes. 
+
 
 ## Walkthrough
 
 1. Draw a diagram or a shape on the canvas shown on tablet
-1. Click the 'save to laptop' button 
-1. The program will automatically save the diagram to you laptop
-1. The diagram will be saved in 'noteimg' folder in the same directory as the main program
+1. Use Select to move and resize objects, or choose Draw, Rectangle, Ellipse, Line, Connector, or Text.
+1. Click **Save to Host** to save the rendered diagram and editable canvas data.
+1. Files are saved in the `noteimg` folder beside the program.
 
 ## Dependencies
 
-1. Python 3.x (Python 3.13 Above recommended)
+1. Python 3.x
 1. Flask 
 1. Pillow
+
+Fabric.js is included as a standalone local browser file in `static/`.
 
 ## How to run
 1. Install dependencies
@@ -23,18 +25,36 @@
 pip install -r requirements.txt
 ```
 2. Run the main file on your laptop
+
 ```
 python backend.py
 ```
+
 3. Open browser on your laptop and go to localhost server if you want to draw from your laptop. 
 
 ### OR
 
-3. Open browser on your tablet / second device and type your wifi-router's IP address if you want to draw from your tablet / second device.
+3. Open browser on your tablet / second device and type your wifi-router's IPv4 IP address if you want to draw from your tablet / second device.
 
+1. Type the IP Address in your second device's browser followed by ':5000'. 
+
+example: 192.168.x.x:5000
+
+```bash
+ipconfig
+```
 
 ## OR 
 
-- Download the .exe file and directly run it on your host device. Then go to localhost server if you want to use a second device. Draw on the executable's canvas if you want to draw from your host device.
+1. Download the .exe file and directly run it on your host device. 
+
+1. Go to localhost server if you want to use a second device.
+
+1. Draw on the executable's canvas if you want to draw from your host device. 
+
+1. Type the IP Address in your second device's browser followed by ':5000'. 
+
+example: 192.168.x.x:5000
+
 ## DISCLAIMER
-BOTH DEVICES MUST BE ON THE SAME WIFI NETWORK FOR THIS SCRIPT TO WORK
+> BOTH DEVICES MUST BE ON THE SAME WIFI NETWORK FOR THIS SCRIPT TO WORK

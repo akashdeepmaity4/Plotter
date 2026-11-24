@@ -1,82 +1,563 @@
-* {
+:root {
+    color-scheme: light;
+    --bg-dark: #ffffff;
+    --bg-sidebar: #1c1c1c;
+    --bg-hover: #303030;
+    --bg-active: #3a3020;
+    --Boron-accent: #c58a00;
+    --Boron-accent-light: #f9d88c;
+    --Boron-accent-hover: #a97400;
+    --text-main: #f5f5f4;
+    --text-muted: #a3a3a3;
+    --border-color: #343434;
+    --canvas-background: #ffffff;
+    --toolbar-height: 64px;
+}
+
+
+*,
+*::before,
+*::after {
     box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
     margin: 0;
-    padding: 0;
-    user-select: none; 
+    background: var(--bg-dark);
+    color: var(--text-main);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     -webkit-touch-callout: none;
 }
 
-body, html {
-    width: 100%;
-    height: 100%;
-    overflow:dvh hidden; 
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
-}
-
 #controls {
-    width: 100%;
-    height: 60px;
-    background-color: #093118;
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    gap: 15px;
-    color: #ffffff;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    z-index: 10;
     position: relative;
+    z-index: 1;
+    display: flex;
+    flex: 0 0 var(--toolbar-height);
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    height: var(--toolbar-height);
+    padding: 0 16px;
+    overflow-x: auto;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border-color);
+    background: #171717;
+    color: #ffffff;
+    box-shadow: 0 2px 12px rgb(0 0 0 / 12%);
 }
 
-#controls label {
-    font-weight: bold;
-    font-size: 14px;
+#menuToggle,
+#drawerScrim {
+    display: none;
 }
 
-input[type="color"] {
-    border: none;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    cursor: pointer;
-    background: none;
+#optionsPanel {
+    display: contents;
+}
+
+#controls>button {
+    color: #ffffff;
 }
 
 button {
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: bold;
-    border: none;
-    border-radius: 4px;
+    flex: 0 0 auto;
+    min-height: 38px;
+    padding: 0 14px;
+    border: 1px solid #3c3c3c;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-main);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+button:hover {
+    border-color: #bcbcbc;
+    background: var(--bg-hover);
+}
+
+#controls button:hover {
+    border-color: #555555;
+    background: #303030;
+    transform: translateY(-1px);
+}
+
+.tool-button.active {
+    border-color: var(--Boron-accent);
+    background: rgb(197 138 0 / 18%);
+    box-shadow: inset 0 0 0 1px rgb(197 138 0 / 16%);
+}
+
+.color-control {
+    flex: 0 0 auto;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.color-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+    height: 38px;
+    padding: 0 10px;
+}
+
+#colorSwatchPreview {
+    position: relative;
+    display: block;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+#colorSwatchPreview::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    /* 3x container width so the full hue cycle is wider than the viewport */
+    width: 300%;
+    background-image: linear-gradient(90deg, #ff0000, #ff8800, #ffee00, #33cc33, #00aaff, #4444ff, #aa00ff, #ff0000);
+    background-size: 100% 100%;
+    animation: rainbow-pan 6s linear infinite;
+    will-change: transform;
+}
+
+@keyframes rainbow-pan {
+
+    /* shift exactly one full gradient cycle: -33.333% of the 300% layer = one swatch width,
+       seamless because the gradient starts and ends on the same red */
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(-33.333%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #colorSwatchPreview::before {
+        animation: none;
+        width: 100%;
+    }
+}
+
+#colorPopover {
+    position: fixed;
+    z-index: 6;
+    top: calc(var(--toolbar-height) + 8px);
+    left: auto;
+    width: 244px;
+    padding: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: #1c1c1c;
+    color: var(--text-main);
+    box-shadow: 0 14px 40px rgb(0 0 0 / 40%);
+}
+
+#colorPopover[hidden] {
+    display: none;
+}
+
+#iroMount {
+    display: flex;
+    justify-content: center;
+}
+
+.swatch-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 12px;
+}
+
+.swatch {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    min-height: 30px;
+    border-radius: 7px;
+    border: 1px solid #3c3c3c;
+    background-image:
+        linear-gradient(45deg, #d9d9d9 25%, transparent 25%, transparent 75%, #d9d9d9 75%),
+        linear-gradient(45deg, #d9d9d9 25%, transparent 25%, transparent 75%, #d9d9d9 75%);
+    background-size: 12px 12px;
+    background-position: 0 0, 6px 6px;
+    cursor: pointer;
+}
+
+.swatch.active {
+    border-color: var(--Boron-accent);
+    box-shadow: 0 0 0 2px rgb(197 138 0 / 45%);
+}
+
+.hex-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.hex-input-row label {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+#hexInput {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 7px 9px;
+    border: 1px solid #3c3c3c;
+    border-radius: 8px;
+    background: #141414;
+    color: var(--text-main);
+    font: inherit;
+    font-size: 13px;
+}
+
+#hexInput:focus {
+    outline: 2px solid var(--Boron-accent);
+    outline-offset: 1px;
+}
+
+.thickness-control {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 4px;
+}
+
+.thickness-control button {
+    min-width: 30px;
+    padding: 0 7px;
+    font-size: 17px;
+}
+
+#thicknessValue {
+    min-width: 34px;
+    color: var(--text-main);
+    font-size: 12px;
+    text-align: center;
 }
 
 #clearBtn {
-    background-color: #e74c3c;
-    color: white;
-    margin-left: auto; 
+    margin-left: auto;
+    color: #f0a39b;
 }
 
 #clearBtn:hover {
-    background-color: #c0392b;
-    scale: 1.05;
+    border-color: #e1b8b4;
+    background: #382321;
+    color: #ffd4cf;
+}
+
+button:focus-visible,
+#hexInput:focus-visible,
+#colorTrigger:focus-visible {
+    outline: 2px solid var(--Boron-accent);
+    outline-offset: 2px;
 }
 
 #saveBtn {
-    background-color: #2ecc71;
-    color: white;
+    border-color: var(--Boron-accent);
+    background: var(--Boron-accent);
+    color: #ffffff;
 }
 
 #saveBtn:hover {
-    background-color: #27ae60;
-    scale: 1.05;
+    border-color: var(--Boron-accent-hover);
+    background: var(--Boron-accent-hover);
+}
+
+.modal-overlay {
+    position: fixed;
+    z-index: 10;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgb(0 0 0 / 55%);
+    backdrop-filter: blur(3px);
+}
+
+.modal-overlay[hidden] {
+    display: none;
+}
+
+.modal {
+    width: min(380px, 92vw);
+    padding: 22px 24px 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: #1c1c1c;
+    color: var(--text-main);
+    box-shadow: 0 18px 50px rgb(0 0 0 / 45%);
+}
+
+.modal h2 {
+    margin: 0 0 6px;
+    font-size: 18px;
+}
+
+.modal-hint {
+    margin: 0 0 16px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.format-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.format-option {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 10px 12px;
+    border: 1px solid #3c3c3c;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.format-option:hover {
+    border-color: #555555;
+    background: var(--bg-hover);
+}
+
+.format-option input {
+    accent-color: var(--Boron-accent);
+    width: 16px;
+    height: 16px;
+}
+
+.format-option:has(input:checked) {
+    border-color: var(--Boron-accent);
+    background: rgb(197 138 0 / 14%);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 18px;
+}
+
+.modal-actions .primary {
+    border-color: var(--Boron-accent);
+    background: var(--Boron-accent);
+    color: #ffffff;
+}
+
+.modal-actions .primary:hover {
+    border-color: var(--Boron-accent-hover);
+    background: var(--Boron-accent-hover);
 }
 
 #paintCanvas {
-    height: 100dvh;
-    width: 100dvw;
-    background-color: #ffffff;
-    cursor: crosshair;
-    touch-action: none; 
+    display: block;
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    background-color: var(--canvas-background);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+@media (max-width: 1024px) {
+    :root {
+        --toolbar-height: 56px;
+    }
+
+    #controls {
+        z-index: 3;
+        gap: 8px;
+        padding: 0 10px;
+        overflow: visible;
+        background: #121212;
+        color: #ffffff;
+    }
+
+    #menuToggle {
+        display: flex;
+        flex: 0 0 40px;
+        flex-direction: column;
+        justify-content: center;
+        gap: 5px;
+        width: 40px;
+        height: 40px;
+        padding: 8px;
+    }
+
+    #menuToggle span {
+        display: block;
+        width: 22px;
+        height: 2px;
+        border-radius: 2px;
+        background: currentColor;
+    }
+
+    #optionsPanel {
+        position: fixed;
+        z-index: 2;
+        top: var(--toolbar-height);
+        bottom: 0;
+        left: 0;
+        display: flex;
+        width: min(300px, 84vw);
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 16px;
+        overflow-y: auto;
+        background: var(--bg-sidebar);
+        color: #ffffff;
+        box-shadow: 12px 0 36px rgb(0 0 0 / 22%);
+        transform: translateX(-105%);
+        transition: transform 0.2s ease;
+        white-space: normal;
+    }
+
+    #optionsPanel button,
+    #optionsPanel .color-control,
+    #optionsPanel #thicknessValue {
+        color: #ffffff;
+    }
+
+    /* Popover opens as a full overlay panel when the toolbar collapses into a drawer */
+    #colorPopover {
+        position: fixed;
+        z-index: 4;
+        top: var(--toolbar-height);
+        left: 0;
+        width: min(320px, 88vw);
+    }
+
+    #optionsPanel button:hover {
+        border-color: #555555;
+        background: #333333;
+    }
+
+    #optionsPanel .tool-button.active {
+        border-color: var(--Boron-accent);
+        background: rgb(197 138 0 / 18%);
+    }
+
+    #optionsPanel>button,
+    #optionsPanel>.color-control,
+    #optionsPanel>.thickness-control {
+        width: 100%;
+    }
+
+    /* the color trigger spans the drawer width and its rainbow fills the whole button */
+    #optionsPanel>#colorTrigger {
+        width: 100%;
+        height: 42px;
+        padding: 0;
+    }
+
+    #optionsPanel>#colorTrigger>#colorSwatchPreview {
+        width: 100%;
+        height: 100%;
+        border-radius: 7px;
+    }
+
+    #optionsPanel>.color-control {
+        margin-top: 8px;
+    }
+
+    #optionsPanel>.thickness-control {
+        justify-content: space-between;
+    }
+
+    #drawerScrim {
+        position: fixed;
+        z-index: 1;
+        inset: var(--toolbar-height) 0 0;
+        display: block;
+        background: rgb(0 0 0 / 28%);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+
+    body.drawer-open #optionsPanel {
+        transform: translateX(0);
+    }
+
+    body.drawer-open #drawerScrim {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    #clearBtn {
+        margin-left: auto;
+        padding: 0 9px;
+    }
+
+    #saveBtn {
+        padding: 0 9px;
+    }
+}
+
+@media (max-width: 480px) {
+    #controls {
+        gap: 5px;
+        padding: 0 6px;
+    }
+
+    #clearBtn,
+    #saveBtn {
+        padding: 0 7px;
+        font-size: 11px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    #optionsPanel,
+    #drawerScrim {
+        transition: none;
+    }
+}
+
+@media (max-width: 360px) {
+    #controls {
+        gap: 4px;
+    }
+
+    #menuToggle {
+        flex-basis: 36px;
+        width: 36px;
+    }
+
+    #clearBtn,
+    #saveBtn {
+        padding: 0 5px;
+        font-size: 10px;
+    }
 }
