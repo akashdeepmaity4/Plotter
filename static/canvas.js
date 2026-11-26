@@ -14,6 +14,7 @@ const colorPopover = document.getElementById('colorPopover');
 const iroMount = document.getElementById('iroMount');
 const swatchRow = document.getElementById('swatchRow');
 const hexInput = document.getElementById('hexInput');
+const colorTriggerMobile = document.getElementById('colorTriggerMobile');
 
 const PRESET_COLORS = ['#171717', '#ffffff', '#e03e3e', '#e3a004', '#2f9e44', '#1971c2'];
 const MAX_RECENT = 5;
@@ -62,6 +63,8 @@ function applyInk(rgbaString, { commit = false } = {}) {
             object.set('fill', rgbaString);
         } else {
             object.set('stroke', rgbaString);
+            // arrows are filled paths: their body must follow the ink too
+            if (object instanceof fabric.Path && object.fill) object.set('fill', rgbaString);
         }
     });
     canvas.requestRenderAll();
@@ -160,13 +163,21 @@ colorTrigger.addEventListener('click', (event) => {
     setColorPopoverOpen(colorPopover.hidden);
 });
 
+if (colorTriggerMobile) {
+    colorTriggerMobile.addEventListener('click', (event) => {
+        event.stopPropagation();
+        setColorPopoverOpen(colorPopover.hidden);
+    });
+}
+
 colorPopover.addEventListener('click', (event) => event.stopPropagation());
 colorPopover.addEventListener('pointerdown', (event) => event.stopPropagation());
 colorPopover.addEventListener('mousedown', (event) => event.stopPropagation());
 colorPopover.addEventListener('touchstart', (event) => event.stopPropagation(), { passive: true });
 
 document.addEventListener('pointerdown', (event) => {
-    if (!colorPopover.hidden && !colorPopover.contains(event.target) && event.target !== colorTrigger) {
+    const onTrigger = event.target === colorTrigger || (colorTriggerMobile && colorTriggerMobile.contains(event.target));
+    if (!colorPopover.hidden && !colorPopover.contains(event.target) && !onTrigger) {
         setColorPopoverOpen(false);
     }
 });
@@ -187,13 +198,239 @@ const canvas = new fabric.Canvas(canvasElement, {
     stopContextMenu: true
 });
 
-renderSwatches();
-applyInk(ink);
-
 let activeTool = 'select';
 let activeShape = null;
 let dragStart = null;
 let freehandPoints = [];
+
+/* ------------------------------------------------------------------
+   Infinite canvas: zoom + pan, with a coordinate grid that is drawn in
+   scene space so it moves, stretches and scales with everything else.
+   ------------------------------------------------------------------ */
+const MIN_ZOOM = 0.1;
+const MAX_ZOOM = 12;
+const GRID_SIZE = 50;        // scene units between minor grid lines
+const GRID_MAJOR = 5;        // every 5th line is a major line
+let isPanning = false;
+let panStart = null;
+let spaceHeld = false;
+
+function clampZoom(value) {
+    return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
+}
+
+function renderGrid(ctx) {
+    const vpt = canvas.viewportTransform;
+    const zoom = vpt[0] || 1;
+    const width = canvas.width;
+    const height = canvas.height;
+
+    // visible scene bounds (the canvas is infinite, so only draw in view)
+    const topLeft = fabric.util.transformPoint({ x: 0, y: 0 }, fabric.util.invertTransform(vpt));
+    const bottomRight = fabric.util.transformPoint({ x: width, y: height }, fabric.util.invertTransform(vpt));
+
+    // three tiers: minor 50, major 250, labels 250
+    const minorStep = GRID_SIZE;
+    const majorStep = GRID_SIZE * GRID_MAJOR;
+    const showMinor = zoom * GRID_SIZE >= 8;
+
+    ctx.save();
+    ctx.lineWidth = 1 / zoom; // stay 1 screen pixel at any zoom
+
+    const drawLines = (step, color) => {
+        const startX = Math.floor(topLeft.x / step) * step;
+        const startY = Math.floor(topLeft.y / step) * step;
+        ctx.beginPath();
+        for (let x = startX; x <= bottomRight.x; x += step) {
+            ctx.moveTo(x, topLeft.y);
+            ctx.lineTo(x, bottomRight.y);
+        }
+        for (let y = startY; y <= bottomRight.y; y += step) {
+            ctx.moveTo(topLeft.x, y);
+            ctx.lineTo(bottomRight.x, y);
+        }
+        ctx.strokeStyle = color;
+        ctx.stroke();
+    };
+
+    if (showMinor) drawLines(minorStep, 'rgba(0, 0, 0, 0.08)');
+    drawLines(majorStep, 'rgba(0, 0, 0, 0.18)');
+    drawLines(majorStep * GRID_MAJOR, 'rgba(0, 0, 0, 0.28)');
+
+    // axes through the scene origin
+    ctx.beginPath();
+    ctx.moveTo(topLeft.x, 0);
+    ctx.lineTo(bottomRight.x, 0);
+    ctx.moveTo(0, topLeft.y);
+    ctx.lineTo(0, bottomRight.y);
+    ctx.strokeStyle = 'rgba(197, 138, 0, 0.55)';
+    ctx.stroke();
+
+    // ruler labels every major interval; thin them out when zoomed far out
+    let labelStep = majorStep;
+    while (zoom * labelStep < 46) labelStep *= GRID_MAJOR;
+    {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+        ctx.font = `${11 / zoom}px -apple-system, Segoe UI, Roboto, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const startX = Math.floor(topLeft.x / labelStep) * labelStep;
+        const startY = Math.floor(topLeft.y / labelStep) * labelStep;
+        const axisY = Math.min(Math.max(0, topLeft.y), bottomRight.y);
+        const axisX = Math.min(Math.max(0, topLeft.x), bottomRight.x);
+        for (let x = startX; x <= bottomRight.x; x += labelStep) {
+            if (x === 0) continue;
+            ctx.fillText(String(x), x + 3 / zoom, axisY + 4 / zoom);
+        }
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let y = startY; y <= bottomRight.y; y += labelStep) {
+            if (y === 0) continue;
+            ctx.fillText(String(y), axisX - 4 / zoom, y + 3 / zoom);
+        }
+    }
+
+    ctx.restore();
+}
+
+// keep the coordinate grid behind every object but above the white background
+const originalRenderBackground = canvas._renderBackground.bind(canvas);
+canvas._renderBackground = function renderBackgroundWithGrid(ctx) {
+    originalRenderBackground(ctx);
+    ctx.save();
+    const vpt = canvas.viewportTransform;
+    ctx.transform(vpt[0], vpt[1], vpt[2], vpt[3], vpt[4], vpt[5]);
+    renderGrid(ctx);
+    ctx.restore();
+};
+
+function zoomToPoint(point, zoom) {
+    canvas.zoomToPoint(point || new fabric.Point(canvas.width / 2, canvas.height / 2), clampZoom(zoom));
+    canvas.requestRenderAll();
+}
+
+function zoomBy(factor, point) {
+    zoomToPoint(point, canvas.getZoom() * factor);
+}
+
+function homeTransform() {
+    // put the scene origin in the middle of the viewport so the axes are visible
+    return [1, 0, 0, 1, canvas.width / 2, canvas.height / 2];
+}
+
+function resetView() {
+    canvas.setViewportTransform(homeTransform());
+    canvas.requestRenderAll();
+}
+
+// Ctrl/Cmd +/-/0
+window.addEventListener('keydown', (event) => {
+    if (event.code === 'Space') spaceHeld = true;
+    const accel = event.ctrlKey || event.metaKey;
+    if (!accel) return;
+    if (event.key === '+' || event.key === '=') {
+        event.preventDefault();
+        zoomBy(1.2);
+    } else if (event.key === '-' || event.key === '_') {
+        event.preventDefault();
+        zoomBy(1 / 1.2);
+    } else if (event.key === '0') {
+        event.preventDefault();
+        resetView();
+    }
+});
+window.addEventListener('keyup', (event) => {
+    if (event.code === 'Space') spaceHeld = false;
+});
+
+// mouse wheel + trackpad pinch (ctrlKey is set by browsers for pinch gestures)
+canvas.on('mouse:wheel', (event) => {
+    const wheel = event.e;
+    if (wheel.ctrlKey || wheel.altKey || wheel.metaKey) {
+        wheel.preventDefault();
+        wheel.stopPropagation();
+        zoomBy(wheel.deltaY < 0 ? 1.08 : 1 / 1.08, new fabric.Point(wheel.offsetX, wheel.offsetY));
+        return;
+    }
+    // plain wheel pans the infinite canvas
+    wheel.preventDefault();
+    wheel.stopPropagation();
+    const vpt = canvas.viewportTransform.slice();
+    vpt[4] -= wheel.deltaX;
+    vpt[5] -= wheel.deltaY;
+    canvas.setViewportTransform(vpt);
+    canvas.requestRenderAll();
+});
+
+// middle-button or space+drag panning, available in every tool
+canvas.on('mouse:down', (event) => {
+    const original = event.e;
+    if (original.button === 1 || spaceHeld) {
+        isPanning = true;
+        panStart = { x: original.clientX, y: original.clientY };
+        canvas.setCursor('grabbing');
+    }
+});
+canvas.on('mouse:move', (event) => {
+    if (!isPanning || !panStart) return;
+    const original = event.e;
+    const vpt = canvas.viewportTransform.slice();
+    vpt[4] += original.clientX - panStart.x;
+    vpt[5] += original.clientY - panStart.y;
+    panStart = { x: original.clientX, y: original.clientY };
+    canvas.setViewportTransform(vpt);
+    canvas.requestRenderAll();
+});
+canvas.on('mouse:up', () => {
+    if (!isPanning) return;
+    isPanning = false;
+    panStart = null;
+    canvas.setCursor(canvas.defaultCursor || 'default');
+});
+
+// touch: one finger pans, two fingers pinch-zoom
+const activeTouches = new Map();
+let pinchStart = null;
+
+canvasElement.addEventListener('touchstart', (event) => {
+    for (const touch of event.changedTouches) activeTouches.set(touch.identifier, touch);
+    if (activeTouches.size === 2) {
+        const [a, b] = [...activeTouches.values()];
+        pinchStart = {
+            distance: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY),
+            zoom: canvas.getZoom(),
+            center: new fabric.Point((a.clientX + b.clientX) / 2 - canvasElement.getBoundingClientRect().left,
+                (a.clientY + b.clientY) / 2 - canvasElement.getBoundingClientRect().top)
+        };
+        // a pinch must not leave a half-drawn shape behind
+        if (activeShape) {
+            canvas.remove(activeShape);
+            activeShape = null;
+            dragStart = null;
+            freehandPoints = [];
+        }
+    }
+}, { passive: true });
+
+canvasElement.addEventListener('touchmove', (event) => {
+    for (const touch of event.changedTouches) activeTouches.set(touch.identifier, touch);
+    if (activeTouches.size !== 2 || !pinchStart) return;
+    event.preventDefault();
+    const [a, b] = [...activeTouches.values()];
+    const distance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    if (!pinchStart.distance) return;
+    zoomToPoint(pinchStart.center, pinchStart.zoom * (distance / pinchStart.distance));
+}, { passive: false });
+
+function endTouch(event) {
+    for (const touch of event.changedTouches) activeTouches.delete(touch.identifier);
+    if (activeTouches.size < 2) pinchStart = null;
+}
+canvasElement.addEventListener('touchend', endTouch, { passive: true });
+canvasElement.addEventListener('touchcancel', endTouch, { passive: true });
+
+renderSwatches();
+applyInk(ink);
 
 function setTool(tool) {
     activeTool = tool;
@@ -202,8 +439,8 @@ function setTool(tool) {
     freehandPoints = [];
     canvas.isDrawingMode = false;
     canvas.selection = tool === 'select';
-    canvas.skipTargetFind = tool !== 'select';
-    canvas.defaultCursor = tool === 'select' ? 'default' : 'crosshair';
+    canvas.skipTargetFind = !['select', 'fill'].includes(tool);
+    canvas.defaultCursor = tool === 'fill' ? 'cell' : (tool === 'select' ? 'default' : 'crosshair');
     canvas.forEachObject((object) => {
         object.selectable = tool === 'select';
         object.evented = tool === 'select';
@@ -237,7 +474,7 @@ function createShape(kind, start) {
 
     if (kind === 'rectangle') return new fabric.Rect({ ...common, width: 1, height: 1 });
     if (kind === 'ellipse') return new fabric.Ellipse({ ...common, rx: 0.5, ry: 0.5 });
-    if (kind === 'line' || kind === 'connector') {
+    if (kind === 'line') {
         return new fabric.Line([start.x, start.y, start.x + 1, start.y + 1], {
             ...common,
             fill: null,
@@ -246,6 +483,44 @@ function createShape(kind, start) {
         });
     }
     return null;
+}
+
+// a plain line with a triangular arrow head only at the end point
+function createArrow(start, end) {
+    const headLength = 12 + strokeWidth * 2;
+    const headWidth = 5 + strokeWidth * 0.8;
+    const angle = Math.atan2(end.y - start.y, end.x - start.x);
+    const left = new fabric.Point(
+        end.x - Math.cos(angle) * headLength - Math.sin(angle) * headWidth,
+        end.y - Math.sin(angle) * headLength + Math.cos(angle) * headWidth
+    );
+    const right = new fabric.Point(
+        end.x - Math.cos(angle) * headLength + Math.sin(angle) * headWidth,
+        end.y - Math.sin(angle) * headLength - Math.cos(angle) * headWidth
+    );
+    // line stops at the arrow base so it does not poke through the head
+    const base = new fabric.Point(
+        end.x - Math.cos(angle) * headLength,
+        end.y - Math.sin(angle) * headLength
+    );
+    const commands = [
+        ['M', start.x, start.y],
+        ['L', base.x, base.y],
+        ['M', left.x, left.y],
+        ['L', end.x, end.y],
+        ['L', right.x, right.y],
+        ['Z']
+    ];
+    return new fabric.Path(commands, {
+        fill: ink,
+        stroke: ink,
+        strokeWidth,
+        strokeLineCap: 'round',
+        strokeLineJoin: 'round',
+        objectCaching: false,
+        selectable: false,
+        evented: false
+    });
 }
 
 function createFreehandPath(points) {
@@ -284,10 +559,75 @@ function addText(point) {
     setTool('select');
 }
 
+function floodFill(x, y, fillColor) {
+    const ctx = canvas.getContext();
+    const width = canvas.width;
+    const height = canvas.height;
+    const image = ctx.getImageData(0, 0, width, height);
+    const data = image.data;
+    const startX = Math.round(x);
+    const startY = Math.round(y);
+    const index = (startY * width + startX) * 4;
+    const target = [data[index], data[index + 1], data[index + 2], data[index + 3]];
+
+    // parse "rgba(r, g, b, a)"
+    const parts = fillColor.match(/rgba?\(([^)]+)\)/i)[1].split(',').map(Number);
+    const fill = [parts[0], parts[1], parts[2], Math.round((parts[3] ?? 1) * 255)];
+    if (target.every((value, i) => Math.abs(value - fill[i]) < 10)) return; // already filled
+
+    const visited = new Uint8Array(width * height);
+    const queue = [[startX, startY]];
+    while (queue.length) {
+        const [cx, cy] = queue.pop();
+        if (cx < 0 || cy < 0 || cx >= width || cy >= height) continue;
+        const key = cy * width + cx;
+        if (visited[key]) continue;
+        visited[key] = 1;
+        const i = key * 4;
+        if (Math.abs(data[i] - target[0]) > 10 ||
+            Math.abs(data[i + 1] - target[1]) > 10 ||
+            Math.abs(data[i + 2] - target[2]) > 10 ||
+            Math.abs(data[i + 3] - target[3]) > 10) continue;
+        data[i] = fill[0];
+        data[i + 1] = fill[1];
+        data[i + 2] = fill[2];
+        data[i + 3] = fill[3];
+        queue.push([cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1]);
+    }
+    ctx.putImageData(image, 0, 0);
+}
+
+function fillAt(point) {
+    // find the topmost object under the click so fills stay editable/vector
+    const fabricPoint = new fabric.Point(point.x, point.y);
+    const objects = canvas.getObjects();
+    let target = null;
+    for (let index = objects.length - 1; index >= 0; index -= 1) {
+        const object = objects[index];
+        if (object.containsPoint && object.containsPoint(fabricPoint)) {
+            target = object;
+            break;
+        }
+    }
+    if (target && !(target instanceof fabric.FabricText) && target.fill !== undefined) {
+        target.set('fill', ink);
+        target.setCoords();
+        canvas.requestRenderAll();
+        return;
+    }
+    // fallback: pixel flood fill on the flattened canvas
+    floodFill(point.x, point.y, ink);
+    canvas.requestRenderAll();
+}
+
 canvas.on('mouse:down', (event) => {
     const point = pointFor(event);
     if (activeTool === 'text') {
         addText(point);
+        return;
+    }
+    if (activeTool === 'fill') {
+        fillAt(point);
         return;
     }
     if (activeTool === 'freehand') {
@@ -299,7 +639,9 @@ canvas.on('mouse:down', (event) => {
     if (!['rectangle', 'ellipse', 'line', 'connector'].includes(activeTool)) return;
 
     dragStart = point;
-    activeShape = createShape(activeTool, point);
+    activeShape = activeTool === 'connector'
+        ? createArrow(point, { x: point.x + 1, y: point.y + 1 })
+        : createShape(activeTool, point);
     canvas.add(activeShape);
 });
 
@@ -326,6 +668,11 @@ canvas.on('mouse:move', (event) => {
         activeShape.set({ left, top, width, height });
     } else if (activeTool === 'ellipse') {
         activeShape.set({ left, top, rx: width / 2, ry: height / 2 });
+    } else if (activeTool === 'connector') {
+        const previousArrow = activeShape;
+        activeShape = createArrow(dragStart, point);
+        canvas.remove(previousArrow);
+        canvas.add(activeShape);
     } else {
         const previousLine = activeShape;
         activeShape = createShape(activeTool, dragStart);
@@ -382,10 +729,20 @@ clearButton.addEventListener('click', () => {
 });
 
 function resizeCanvas() {
+    const firstLayout = !canvas.viewportTransform;
     canvas.setDimensions({
         width: window.innerWidth,
         height: Math.max(window.innerHeight - document.getElementById('controls').offsetHeight, 1)
     });
+    // keep the scene origin centered; also recenter once on first layout
+    const vpt = canvas.viewportTransform;
+    if (firstLayout) {
+        canvas.setViewportTransform(homeTransform());
+    } else {
+        const zoom = vpt[0];
+        const vptCenter = [zoom, 0, 0, zoom, canvas.width / 2, canvas.height / 2];
+        canvas.setViewportTransform(vptCenter);
+    }
     canvas.requestRenderAll();
 }
 

@@ -62,6 +62,12 @@ body {
     display: none;
 }
 
+#desktopExtra {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 8px;
+}
+
 #optionsPanel {
     display: contents;
 }
@@ -102,6 +108,43 @@ button:hover {
     box-shadow: inset 0 0 0 1px rgb(197 138 0 / 16%);
 }
 
+.tool-icon {
+    display: block;
+    width: 20px;
+    height: 20px;
+}
+
+/* icon-only toolbar button: keep it square-ish instead of collapsing */
+#fillTool {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    padding: 0;
+}
+
+#fillTool .tool-icon {
+    width: 28px;
+    height: 28px;
+}
+
+.tool-grid {
+    display: contents;
+}
+
+.mobile-row {
+    display: none;
+}
+
+.mobile-thickness-row {
+    display: contents;
+}
+
+/* the mobile bucket only belongs in the drawer */
+.mobile-thickness-row .mobile-fill {
+    display: none;
+}
+
 .color-control {
     flex: 0 0 auto;
     color: var(--text-muted);
@@ -117,7 +160,8 @@ button:hover {
     padding: 0 10px;
 }
 
-#colorSwatchPreview {
+#colorSwatchPreview,
+#colorSwatchPreviewMobile {
     position: relative;
     display: block;
     width: 28px;
@@ -127,7 +171,8 @@ button:hover {
     overflow: hidden;
 }
 
-#colorSwatchPreview::before {
+#colorSwatchPreview::before,
+#colorSwatchPreviewMobile::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -153,7 +198,9 @@ button:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    #colorSwatchPreview::before {
+
+    #colorSwatchPreview::before,
+    #colorSwatchPreviewMobile::before {
         animation: none;
         width: 100%;
     }
@@ -462,6 +509,20 @@ button:focus-visible,
         background: #333333;
     }
 
+    /* mobile drawer: the six drawing tools form a 2-column, 3-row grid */
+    .tool-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .tool-grid .tool-button {
+        width: 100%;
+        padding: 0 8px;
+    }
+
     #optionsPanel .tool-button.active {
         border-color: var(--Boron-accent);
         background: rgb(197 138 0 / 18%);
@@ -505,6 +566,104 @@ button:focus-visible,
         transition: opacity 0.2s ease;
     }
 
+    /* mobile: bucket (left half) + thickness control (right half) */
+    .mobile-thickness-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        width: 100%;
+        align-items: stretch;
+    }
+
+    .mobile-thickness-row .mobile-fill {
+        display: flex;
+        width: 100%;
+        height: 44px;
+        padding: 0;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .mobile-thickness-row .mobile-fill .tool-icon {
+        width: 30px;
+        height: 30px;
+    }
+
+    .mobile-thickness-row .thickness-control {
+        width: 100%;
+        height: 44px;
+        justify-content: space-between;
+        padding: 0 4px;
+        border: 1px solid #3c3c3c;
+        border-radius: 8px;
+    }
+
+    /* mobile quick-action rows */
+    .mobile-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        width: 100%;
+    }
+
+    .mobile-row .tool-button,
+    .mobile-row .color-trigger {
+        display: flex;
+        width: 100%;
+        height: 44px;
+        padding: 0;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .mobile-row #colorTriggerMobile {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        height: 42px;
+    }
+
+    /* Themes (left half) and the placeholder (right half) share the row below the picker */
+    .mobile-row #themesBtn {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .mobile-row #placeholderRight {
+        grid-column: 2;
+        grid-row: 2;
+    }
+
+    .mobile-row #colorSwatchPreviewMobile {
+        width: 100%;
+        height: 100%;
+        border-radius: 7px;
+    }
+
+    /* keep the rainbow full-bleed; show the picked ink as a footer strip */
+    .mobile-row #colorSwatchPreviewMobile::after {
+        content: '';
+        position: absolute;
+        inset: auto 0 0 0;
+        height: 8px;
+        background: var(--ink-color, transparent);
+        border-top: 1px solid rgb(0 0 0 / 35%);
+    }
+
+    .mobile-row .tool-button.placeholder {
+        color: var(--text-muted);
+        cursor: not-allowed;
+    }
+
+    .mobile-row .tool-button.placeholder:disabled {
+        opacity: 0.5;
+    }
+
+    /* hide the desktop-only color trigger + inline fill button inside the drawer on mobile */
+    #optionsPanel>#colorTrigger,
+    #optionsPanel>[data-tool="fill"]#fillTool {
+        display: none;
+    }
+
     body.drawer-open #optionsPanel {
         transform: translateX(0);
     }
@@ -517,6 +676,11 @@ button:focus-visible,
     #clearBtn {
         margin-left: auto;
         padding: 0 9px;
+    }
+
+    /* Themes + Import live inside the drawer on mobile */
+    #desktopExtra {
+        display: none;
     }
 
     #saveBtn {

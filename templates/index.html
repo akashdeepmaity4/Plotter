@@ -9,7 +9,6 @@
 </head>
 
 <body>
-
     <div id="controls">
         <button type="button" id="menuToggle" aria-label="Open drawing options" aria-expanded="false"
             aria-controls="optionsPanel">
@@ -17,12 +16,37 @@
         </button>
         <div id="optionsPanel">
             <button class="tool-button active" data-tool="select" aria-pressed="true">Select</button>
-            <button class="tool-button" data-tool="freehand" aria-pressed="false">Draw</button>
-            <button class="tool-button" data-tool="rectangle" aria-pressed="false">Rectangle</button>
-            <button class="tool-button" data-tool="ellipse" aria-pressed="false">Ellipse</button>
-            <button class="tool-button" data-tool="line" aria-pressed="false">Line</button>
-            <button class="tool-button" data-tool="connector" aria-pressed="false">Connector</button>
-            <button class="tool-button" data-tool="text" aria-pressed="false">Text</button>
+            <div class="tool-grid" role="group" aria-label="Drawing tools">
+                <button class="tool-button" data-tool="freehand" aria-pressed="false">Draw</button>
+                <button class="tool-button" data-tool="rectangle" aria-pressed="false">Rectangle</button>
+                <button class="tool-button" data-tool="ellipse" aria-pressed="false">Ellipse</button>
+                <button class="tool-button" data-tool="line" aria-pressed="false">Line</button>
+                <button class="tool-button" data-tool="connector" aria-pressed="false"
+                    aria-label="Arrow connector">Arrow</button>
+                <button class="tool-button" data-tool="text" aria-pressed="false">Text</button>
+            </div>
+            <button class="tool-button" data-tool="fill" aria-pressed="false"
+                aria-label="Fill shapes with the selected color" id="fillTool">
+                <svg class="tool-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22"
+                    fill="none" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="fillGradDesktop" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#9400d3" />
+                            <stop offset="16.6%" stop-color="indigo" />
+                            <stop offset="33.3%" stop-color="#00f" />
+                            <stop offset="50%" stop-color="#0f0" />
+                            <stop offset="66.6%" stop-color="#ff0" />
+                            <stop offset="83.3%" stop-color="#ff7f00" />
+                            <stop offset="100%" stop-color="red" />
+                        </linearGradient>
+                    </defs>
+                    <path
+                        d="M16.9 7.3 9.4 0l-1.3 1.3 2.1 2.1-5 5a1.5 1.5 0 0 0 0 2.1l5.1 5.1a1.5 1.5 0 0 0 2.1 0l4.5-4.5a1.5 1.5 0 0 0 0-2.1ZM6.7 9.5l4.4-4.4 4.4 4.4H6.7Z"
+                        fill="url(#fillGradDesktop)" stroke="#ededed" stroke-width="1.2" stroke-linejoin="round" />
+                    <path d="M20.6 15.2s-1.8 1.9-1.8 3.1a1.8 1.8 0 1 0 3.6 0c0-1.2-1.8-3.1-1.8-3.1Z"
+                        fill="url(#fillGradDesktop)" stroke="#ededed" stroke-width="1.2" stroke-linejoin="round" />
+                </svg>
+            </button>
             <button type="button" id="colorTrigger" aria-haspopup="dialog" aria-expanded="false"
                 aria-controls="colorPopover" aria-label="Brush color and opacity">
                 <span id="colorSwatchPreview" aria-hidden="true"></span>
@@ -36,11 +60,51 @@
                         value="#171717ff">
                 </div>
             </div>
-            <div class="thickness-control" aria-label="Line thickness">
-                <button type="button" id="thicknessDown" aria-label="Decrease thickness">−</button>
-                <output id="thicknessValue" aria-live="polite">2 px</output>
-                <button type="button" id="thicknessUp" aria-label="Increase thickness">+</button>
+            <div class="mobile-thickness-row" aria-label="Thickness and fill">
+                <button class="tool-button mobile-fill" data-tool="fill" aria-pressed="false"
+                    aria-label="Fill shapes with the selected color">
+                    <svg class="tool-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="30" height="30"
+                        fill="none" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="fillGradMobile" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#9400d3" />
+                                <stop offset="16.6%" stop-color="indigo" />
+                                <stop offset="33.3%" stop-color="#00f" />
+                                <stop offset="50%" stop-color="#0f0" />
+                                <stop offset="66.6%" stop-color="#ff0" />
+                                <stop offset="83.3%" stop-color="#ff7f00" />
+                                <stop offset="100%" stop-color="red" />
+                            </linearGradient>
+                        </defs>
+                        <path
+                            d="M16.9 7.3 9.4 0l-1.3 1.3 2.1 2.1-5 5a1.5 1.5 0 0 0 0 2.1l5.1 5.1a1.5 1.5 0 0 0 2.1 0l4.5-4.5a1.5 1.5 0 0 0 0-2.1ZM6.7 9.5l4.4-4.4 4.4 4.4H6.7Z"
+                            fill="url(#fillGradMobile)" stroke="#ededed" stroke-width="1.2" stroke-linejoin="round" />
+                        <path d="M20.6 15.2s-1.8 1.9-1.8 3.1a1.8 1.8 0 1 0 3.6 0c0-1.2-1.8-3.1-1.8-3.1Z"
+                            fill="url(#fillGradMobile)" stroke="#ededed" stroke-width="1.2" stroke-linejoin="round" />
+                    </svg>
+                </button>
+                <div class="thickness-control" aria-label="Line thickness">
+                    <button type="button" id="thicknessDown" aria-label="Decrease thickness">−</button>
+                    <output id="thicknessValue" aria-live="polite">2 px</output>
+                    <button type="button" id="thicknessUp" aria-label="Increase thickness">+</button>
+                </div>
             </div>
+            <div class="mobile-row" aria-label="Quick actions">
+                <button type="button" id="colorTriggerMobile" class="color-trigger" aria-haspopup="dialog"
+                    aria-expanded="false" aria-controls="colorPopover" aria-label="Brush color and opacity">
+                    <span id="colorSwatchPreviewMobile" aria-hidden="true"></span>
+                </button>
+                <button type="button" id="themesBtn" class="tool-button placeholder" aria-label="Themes (coming soon)"
+                    disabled>Themes</button>
+                <button type="button" id="placeholderRight" class="tool-button placeholder"
+                    aria-label="Reserved for a future tool" disabled>Import</button>
+            </div>
+        </div>
+        <div id="desktopExtra" aria-label="Additional tools">
+            <button type="button" id="themesBtnDesktop" class="tool-button placeholder"
+                aria-label="Themes (coming soon)" disabled>Themes</button>
+            <button type="button" id="importBtnDesktop" class="tool-button placeholder"
+                aria-label="Import (coming soon)" disabled>Import</button>
         </div>
         <button type="button" id="clearBtn">Clear</button>
         <button id="saveBtn">Save to Host</button>
